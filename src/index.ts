@@ -24,7 +24,8 @@ export default class DateHelper {
    * @param {DateHelperConfig} [config] - Optional configuration for the DateHelper instance.
    * @returns {DateHelper} A DateHelper instance representing the current date and time.
    */
-  static now = (config?: DateHelperConfig): DateHelper => new DateHelper(undefined, config);
+  static now = (config?: DateHelperConfig): DateHelper =>
+    new DateHelper(undefined, config);
 
   /**
    * Return gap in minutes between parameters d1 and d2
@@ -173,7 +174,10 @@ export default class DateHelper {
    * @param {DateHelper} [date=DateHelper.now()] - Optional. The date against which to compare the time. Defaults to the current date and time.
    * @returns {boolean} - True if the provided time is in the past relative to the given date, otherwise false.
    */
-  static isTimePastForDate = (time: Time, date: DateHelper = DateHelper.now()): boolean => {
+  static isTimePastForDate = (
+    time: Time,
+    date: DateHelper = DateHelper.now()
+  ): boolean => {
     const currentTime = new DateHelper();
     currentTime.date.setHours(time.hour ?? 0);
     currentTime.date.setMinutes(time.minute ?? 0);
@@ -261,7 +265,7 @@ export default class DateHelper {
     }
   };
 
-  protected date: Date;
+  private date: Date;
   protected defaultLang: SupportedLanguages = "en";
   protected useShortText = false;
   protected useBD = false;
@@ -508,7 +512,7 @@ export default class DateHelper {
    * Get the formatted date and time string based on the current configuration settings.
    * @returns {string} The formatted date and time string.
    */
-  getDisplayDateAndTime = () =>
+  getDisplayDateAndTime = (): string =>
     [this.getDisplayDate(), this.getDisplayTime()].join(" ");
 
   /**
@@ -521,6 +525,12 @@ export default class DateHelper {
     if (this.useShortText) return MONTHS_ABBR[month];
     return MONTHS[month];
   };
+
+  /**
+   * Get Date object on this DateHelper object.
+   * @returns {Date} - The Date representing date time for this object.
+   */
+  getDate = (): Date => this.date;
 
   /**
    * Converts the DateHelper object to a DateTuple.
