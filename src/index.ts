@@ -1,4 +1,3 @@
-import * as moment from "moment";
 import {
   ONE_DAY_IN_MILLISECONDS,
   en as constantsEN,
@@ -100,9 +99,14 @@ export default class DateHelper {
    * @returns {boolean} - True if both DateHelper instances represent the same day, otherwise false.
    */
   static isSameDay = (d1: DateHelper, d2: DateHelper): boolean => {
-    const d1mm = d1.toMoment().startOf("day");
-    const d2mm = d2.toMoment().startOf("day");
-    return d1mm.isSame(d2mm);
+    const d1Tuple = d1.toDateTuple();
+    const d2Tuple = d2.toDateTuple();
+
+    return (
+      d1Tuple[0] === d2Tuple[0] && // Year
+      d1Tuple[1] === d2Tuple[1] && // Month
+      d1Tuple[2] === d2Tuple[2] // Day
+    );
   };
 
   /**
@@ -196,16 +200,6 @@ export default class DateHelper {
   ) => {
     const ms = Date.parse(date);
     return new DateHelper(ms + offset);
-  };
-
-  /**
-   * Creates a new DateHelper instance from a Moment.js object.
-   * @param {Moment | null} moment - The Moment.js object to create the instance from.
-   * @returns {DateHelper | null} - A new DateHelper instance if a valid Moment.js object is provided, otherwise null.
-   */
-  static fromMoment = (moment: moment.Moment | null): DateHelper | null => {
-    if (moment == null) return null;
-    return new DateHelper(moment.toISOString());
   };
 
   /**
@@ -550,12 +544,6 @@ export default class DateHelper {
     hour: this.date.getHours(),
     minute: this.date.getMinutes(),
   });
-
-  /**
-   * Converts the DateHelper object to a Moment.js object.
-   * @returns {moment.Moment} - The Moment.js object representing the same date and time as the DateHelper object.
-   */
-  toMoment = (): moment.Moment => moment(this.date);
 
   /**
    * Converts this DateHelper instance to milliseconds since January 1, 1970, 00:00:00 UTC.
