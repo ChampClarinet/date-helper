@@ -12,6 +12,9 @@ import {
 } from "./types";
 import { padZero } from "./utils";
 
+export * from "./types";
+export * from "./constants";
+
 export default class DateHelper {
   static CURRENT_YEAR = () => new Date().getFullYear();
   static ONE_DAY_IN_MS = ONE_DAY_IN_MILLISECONDS;
