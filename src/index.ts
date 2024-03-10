@@ -12,7 +12,6 @@ import {
 } from "./types";
 import { padZero } from "./utils";
 
-export * from "./types";
 export * from "./constants";
 
 export default class DateHelper {
@@ -445,8 +444,6 @@ export default class DateHelper {
    * @throws {Error} Throws an error if the date is already in the Buddhist calendar.
    */
   getBDYear = (): number => {
-    if (this.useBD)
-      throw new Error(`Can't convert this to BD, it is already BD.`);
     const year = this.date.getFullYear();
     return year + 543;
   };
@@ -457,7 +454,7 @@ export default class DateHelper {
    */
   getADYear = (): number => {
     const year = this.date.getFullYear();
-    return year - 543;
+    return year;
   };
 
   /**
