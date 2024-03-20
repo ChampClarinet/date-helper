@@ -13,6 +13,7 @@ import {
 import { padZero } from "./utils";
 
 export * from "./constants";
+export * from "./types";
 
 export default class DateHelper {
   static CURRENT_YEAR = () => new Date().getFullYear();
