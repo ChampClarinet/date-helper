@@ -483,12 +483,13 @@ export default class DateHelper {
     let minutes: number | string = this.date.getMinutes();
     let seconds: number | string = this.date.getSeconds();
 
+    let period = "";
+
     if (!this.use12HourFormat) {
       hours = padZero(hours);
     } else {
-      const period = hours >= 12 ? "PM" : "AM";
+      period = hours >= 12 ? "PM" : "AM";
       hours = padZero(hours % 12 || 12);
-      hours += ` ${period}`;
     }
 
     minutes = padZero(minutes);
@@ -498,6 +499,10 @@ export default class DateHelper {
     if (this.showSeconds) {
       seconds = padZero(seconds);
       formattedTime += `:${seconds}`;
+    }
+
+    if (this.use12HourFormat) {
+      formattedTime += ` ${period}`;
     }
 
     return formattedTime;
