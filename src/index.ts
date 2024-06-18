@@ -1,3 +1,4 @@
+import moment from "moment";
 import {
   ONE_DAY_IN_MILLISECONDS,
   en as constantsEN,
@@ -571,5 +572,13 @@ export default class DateHelper {
    */
   toISO8601String = (): string => {
     return this.date.toISOString();
+  };
+
+  /**
+   * Converts the DateHelper object to momentjs instance
+   * @returns {moment.Moment}
+   */
+  toMoment = (): moment.Moment => {
+    return moment(this.date);
   };
 }
