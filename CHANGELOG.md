@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.1 - 2025-10-17
+
+### 🛠 Fixed
+
+- Fixed module resolution issue in consuming projects (Next.js, Node.js, and React apps) caused by incomplete `exports` map.
+- Removed dual build output (`.mjs` / `.cjs`) and unified build into a **single ESM format** for stability.
+- Ensured all entry points (`import`, `require`, and `default`) resolve to `dist/index.js`.
+- Verified compatibility with Bun ≥ 1.3.0 and Node ≥ 18.
+
+### Changed
+
+- Simplified build pipeline using Bun.
+- Removed redundant `cjs`/`esm` outputs and unnecessary mappings in `package.json`.
+- Updated `exports` to include `./package.json` for compatibility with tooling that checks package metadata.
+
+### Notes
+
+> This patch focuses on restoring module compatibility.  
+> A proper dual-format rebuild (CJS + ESM)
+
 ## 1.4.0 — 2025-10-17
 
 ### ✨ Features

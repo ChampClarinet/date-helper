@@ -1,8 +1,7 @@
 # @cantabile/date-helper
 
-[![npm version](https://img.shields.io/npm/v/@cantabile/date-helper.svg)](https://www.npmjs.com/package/@cantabile/date-helper)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-[![Build with Bun](https://img.shields.io/badge/Built%20with-Bun-ff69b4.svg)](https://bun.sh)
+[![npm version](https://badge.fury.io/js/%40cantabile%2Fdate-helper.svg)](https://badge.fury.io/js/%40cantabile%2Fdate-helper)
+[![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
 
 **DateHelper** is a lightweight TypeScript library that simplifies date and time handling, including:
 
@@ -140,4 +139,11 @@ dist/
 
 ## 📜 License
 
-ISC © [Wallop Opasakhun (ChampClarinet)](https://github.com/champclarinet)
+Licensed under the ISC © [Wallop Opasakhun (ChampClarinet)](https://github.com/champclarinet)
+
+---
+
+## ☕ Support
+
+If you enjoy my projects, you can **buy me a coffee** to show your support:  
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=ChampClarinet&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/champclarinet)
