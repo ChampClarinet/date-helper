@@ -1,6 +1,6 @@
 {
   "name": "@cantabile/date-helper",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Helper class for date handling",
   "homepage": "https://github.com/ChampClarinet/date-helper",
   "author": "Wallop Opasakhun (https://github.com/champclarinet)",
@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "bun run clean && bun build src/index.ts --outdir dist --target=node --format=esm --sourcemap --outfile=index.js && tsc -p tsconfig.build.json",
+    "build": "bun run clean && tsc -p tsconfig.build.json",
     "test": "bun test",
     "prepublishOnly": "bun run build",
     "commit": "cz",
