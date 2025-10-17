@@ -143,7 +143,10 @@ Licensed under the ISC © [Wallop Opasakhun (ChampClarinet)](https://github.com/
 
 ---
 
-## ☕ Support
+## 💖 Support
 
-If you enjoy my projects, you can **buy me a coffee** to show your support:  
-[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=ChampClarinet&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/champclarinet)
+If this library helps your work, you can support the maintainer here:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/☕️-Buy%20Me%20a%20Coffee-orange)](https://buymeacoffee.com/champclarinet)
+
+Every cup fuels more open-source love and cleaner TypeScript for everyone! 💫

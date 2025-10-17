@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.2 - 2025-10-17
+
+### Fixed
+
+- Removed accidental `node:module` imports injected by Bun bundler.
+- Rebuilt with pure **TypeScript (tsc-only)** output — no bundling.
+- Ensured output `dist/index.js` is clean ESM, compatible with **Next.js**, **Vite**, and **Webpack 5+**.
+- Updated `exports` map to include `./package.json` for full toolchain compatibility.
+- Added proper build exclusions and cleanup rules for a lighter package.
+
+### Notes
+
+This release restores compatibility with browser-based and Next.js projects that failed due to:
+
+```
+UnhandledSchemeError: Reading from “node:module”
+```
+
+---
+
 ## 1.4.1 - 2025-10-17
 
 ### 🛠 Fixed
