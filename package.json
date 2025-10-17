@@ -29,10 +29,7 @@
     "prepublishOnly": "bun run build",
     "prepare": "husky",
     "commit": "cz",
-    "format": "prettier -w .",
-    "release:major": "bun run build && bun test && npm version major && git push && git push --tags && HUSKY=0 bun publish --access public",
-    "release:minor": "bun run build && bun test && npm version minor && git push && git push --tags && HUSKY=0 bun publish --access public",
-    "release:patch": "bun run build && bun test && npm version patch && git push && git push --tags && HUSKY=0 bun publish --access public"
+    "format": "prettier -w ."
   },
   "license": "ISC",
   "dependencies": {
