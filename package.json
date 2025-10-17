@@ -27,7 +27,6 @@
     "build": "bun run clean && bun run build:esm && bun run build:cjs && bun run build:types",
     "test": "bun test",
     "prepublishOnly": "bun run build",
-    "prepare": "husky",
     "commit": "cz",
     "format": "prettier -w ."
   },
