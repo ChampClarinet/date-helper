@@ -4,27 +4,26 @@
   "description": "Helper class for date handling",
   "homepage": "https://github.com/ChampClarinet/date-helper",
   "author": "Wallop Opasakhun (https://github.com/champclarinet)",
-  "types": "dist/index.d.ts",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
+      "default": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
+  "sideEffects": false,
+  "packageManager": "bun@1.3.0",
   "files": [
     "dist"
   ],
-  "sideEffects": false,
-  "packageManager": "bun@1.3.0",
   "scripts": {
     "clean": "rm -rf dist",
-    "build:esm": "bun build src/index.ts --outdir dist --target=node --format=esm --sourcemap --outfile=index.mjs",
-    "build:cjs": "bun build src/index.ts --outdir dist --target=node --format=cjs --sourcemap --outfile=index.cjs",
-    "build:types": "tsc -p tsconfig.build.json",
-    "build": "bun run clean && bun run build:esm && bun run build:cjs && bun run build:types",
+    "build": "bun run clean && bun build src/index.ts --outdir dist --target=node --format=esm --sourcemap --outfile=index.js && tsc -p tsconfig.build.json",
     "test": "bun test",
     "prepublishOnly": "bun run build",
     "commit": "cz",
