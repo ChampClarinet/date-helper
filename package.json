@@ -9,9 +9,9 @@
   "module": "dist/index.mjs",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -21,7 +21,7 @@
   "packageManager": "bun@1.3.0",
   "scripts": {
     "clean": "rm -rf dist",
-    "build:esm": "bun build src/index.ts --outdir dist --target=node --format=esm --sourcemap",
+    "build:esm": "bun build src/index.ts --outdir dist --target=node --format=esm --sourcemap --outfile=index.mjs",
     "build:cjs": "bun build src/index.ts --outdir dist --target=node --format=cjs --sourcemap --outfile=index.cjs",
     "build:types": "tsc -p tsconfig.build.json",
     "build": "bun run clean && bun run build:esm && bun run build:cjs && bun run build:types",
