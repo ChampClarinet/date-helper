@@ -1,67 +1,86 @@
 /**
- * Represents a date tuple consisting of year, month, and date.
- * @typedef {Array<number>} DateTuple
- * @property {number} 0 - The year.
- * @property {number} 1 - The month number (humanly count).
- * @property {number} 2 - The date.
+ * Represents a date tuple consisting of year, month, and day.
+ * - Month is human-readable (1–12)
+ * - Day is human-readable (1–31)
+ *
+ * @example
+ * const tuple: DateTuple = [2025, 10, 17];
  */
-
 export type DateTuple = [number, number, number];
 
 /**
- * Represents a time object consisting of hour and minute.
- * @typedef {Object} Time
- * @property {number|null} hour - The hour value (null if unspecified).
- * @property {number|null} minute - The minute value (null if unspecified).
+ * Represents a time object with hour and minute components.
+ * - Both fields are optional; if omitted, they default to 0 internally.
+ *
+ * @example
+ * const time: Time = { hour: 9, minute: 30 };
+ * const midnight: Time = {}; // Defaults to 00:00
  */
 export interface Time {
+  /** Hour value (0–23) */
   hour: number | null;
+  /** Minute value (0–59) */
   minute: number | null;
 }
 
 /**
- * Represents a month and year.
+ * Represents a combination of month and year.
+ *
+ * @example
+ * const my: MonthYear = { month: 10, year: 2025 };
  */
 export interface MonthYear {
+  /** Month number (1–12) */
   month: number;
+  /** Gregorian year (A.D.) */
   year: number;
 }
 
+/**
+ * Supported languages for display and localization.
+ */
 export type SupportedLanguages = "en" | "th";
 
 /**
  * Configuration options for the DateHelper class.
+ * All fields are optional.
+ *
  * @interface
  */
 export interface DateHelperConfig {
-  lang: SupportedLanguages;
-  isUTC: boolean;
   /**
-   * If this true, all text will use short form.
-   * For example, "January" will be "Jan" and "Sunday" will be "Sun".
-   * If this false, all text will use long form.
-   * For example, "January" will be "January" and "Sunday" will be "Sunday".
-   * @default false;
-   * @type {boolean}
+   * Language for display text (month names, relative time, etc.)
+   * @default "en"
    */
-  useShortText: boolean;
+  lang?: SupportedLanguages;
+
   /**
-   * If this true, all date texts will use B.D. year
-   * @default false;
-   * @type {boolean}
+   * If true, treats the date as UTC (removes browser timezone offset).
+   * @default false
    */
-  useBD: boolean;
+  isUTC?: boolean;
+
   /**
-   * If this true, all time texts will use AM PM format.
-   * If this false, all time texts will use 24-hour format.
-   * @default false;
-   * @type {boolean}
+   * If true, uses abbreviated month/day text (e.g., "Jan", "Mon").
+   * @default false
    */
-  use12HourFormat: boolean;
+  useShortText?: boolean;
+
   /**
-   * If this true, all time texts will be displayed with seconds.
-   * @default false;
-   * @type {boolean}
+   * If true, displays Buddhist Era (B.E.) years (A.D. + 543).
+   * @default false
    */
-  showSeconds: boolean;
+  useBD?: boolean;
+
+  /**
+   * If true, uses 12-hour format (AM/PM); otherwise 24-hour format.
+   * @default false
+   */
+  use12HourFormat?: boolean;
+
+  /**
+   * If true, includes seconds in displayed time.
+   * @default false
+   */
+  showSeconds?: boolean;
 }

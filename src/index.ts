@@ -1,38 +1,63 @@
 import moment from "moment";
-import {
-  ONE_DAY_IN_MILLISECONDS,
-  en as constantsEN,
-  th as constantsTH,
-} from "./constants";
-import {
-  DateHelperConfig,
-  DateTuple,
-  MonthYear,
-  SupportedLanguages,
-  Time,
-} from "./types";
+
+import { ONE_DAY_IN_MILLISECONDS, en as constantsEN, th as constantsTH } from "./constants";
+import { DateHelperConfig, DateTuple, MonthYear, SupportedLanguages, Time } from "./types";
 import { padZero } from "./utils";
 
 export * from "./constants";
 export * from "./types";
 
+/**
+ * A lightweight utility for common date/time operations with i18n (EN/TH)
+ * and Buddhist Era (BE) support. Designed to be framework-agnostic and
+ * easy to integrate in UI code.
+ *
+ * - Uses the runtime's local timezone by default.
+ * - Language strings are provided via `constants` (EN/TH).
+ * - Supports short month names, 12/24h time, and optional seconds display.
+ */
 export default class DateHelper {
+  /** Current Gregorian year from system clock. */
   static CURRENT_YEAR = () => new Date().getFullYear();
+  /** One day in milliseconds. */
   static ONE_DAY_IN_MS = ONE_DAY_IN_MILLISECONDS;
+  /** Current month (1-12) from system clock. */
   static CURRENT_MONTH = new Date().getMonth() + 1;
+  /** Fixed offset for Thailand timezone (+07:00) in milliseconds. */
   static THAI_TIMEZONE_OFFSET = 7 * 60 * 60 * 1000;
 
-  /**
-   * Creates a new DateHelper instance representing the current date and time.
-   * @param {DateHelperConfig} [config] - Optional configuration for the DateHelper instance.
-   * @returns {DateHelper} A DateHelper instance representing the current date and time.
-   */
-  static now = (config?: DateHelperConfig): DateHelper =>
-    new DateHelper(undefined, config);
+  /** Internal JS Date backing this instance (local time). */
+  private date: Date;
+
+  /** Default language for display strings. */
+  protected defaultLang: SupportedLanguages = "en";
+
+  /** Use abbreviated month names (e.g., "Jan"). */
+  protected useShortText = false;
+
+  /** Display year as Buddhist Era (AD + 543). */
+  protected useBD = false;
+
+  /** Display time in 12-hour format with AM/PM. */
+  protected use12HourFormat = false;
+
+  /** Include seconds in `getDisplayTime()`. */
+  protected showSeconds = false;
 
   /**
-   * Return gap in minutes between parameters d1 and d2
-   * @returns minutes
+   * Creates a new instance representing the current moment (`Date.now()`).
+   * @param {DateHelperConfig} [config] Optional configuration (lang, BE, 12/24h, etc).
+   * @returns {DateHelper}
+   */
+  static now = (config?: DateHelperConfig): DateHelper => {
+    return new DateHelper(undefined, config);
+  };
+
+  /**
+   * Returns the difference in whole minutes: `d1 - d2`.
+   * @param {DateHelper} d1 First datetime.
+   * @param {DateHelper} d2 Second datetime.
+   * @returns {number} Rounded minutes delta (positive if `d1` after `d2`).
    */
   static deltaMinutes = (d1: DateHelper, d2: DateHelper) => {
     const dd1 = +d1.date;
@@ -43,10 +68,10 @@ export default class DateHelper {
   };
 
   /**
-   * Creates a new DateHelper instance from a DateTuple and optional Time.
-   * @param {DateTuple} tuple - The DateTuple representing the year, month, and date.
-   * @param {Time} [time] - Optional. The Time object representing the hour and minute.
-   * @returns {DateHelper} - A new DateHelper instance representing the combined date and time.
+   * Builds instance from tuple (Y,M,D) and optional time (H,m).
+   * @param {DateTuple} tuple [year, month(1-12), day(1-31)].
+   * @param {Time} [time] Optional time of day.
+   * @returns {DateHelper}
    */
   static fromDateTupleAndTime = (tuple: DateTuple, time?: Time): DateHelper => {
     const [y, m, d] = tuple;
@@ -55,17 +80,15 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if the DateHelper instance falls on the specified date.
-   * @param {string} date - The date to check against, in the format "YYYY-MM-DD".
-   * @param {DateHelper} instance - The DateHelper instance to compare.
-   * @returns {boolean} - True if the DateHelper instance falls on the specified date, otherwise false.
-   * @throws {Error} - If the provided date is not in the correct format.
+   * Checks whether `instance` falls on the specific ISO date (YYYY-MM-DD).
+   * @param {string} date ISO date string (YYYY-MM-DD).
+   * @param {DateHelper} instance Instance to check.
+   * @returns {boolean}
+   * @throws {Error} If input format is invalid.
    */
   static isInGivenDate = (date: string, instance: DateHelper): boolean => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      throw new Error(
-        `Invalid date format: "${date}", must be in this format: YYYY-MM-DD`
-      );
+      throw new Error(`Invalid date format: "${date}", must be in this format: YYYY-MM-DD`);
     }
     const [year, month, day] = date.split("-");
     const [y, m, d] = instance.toDateTuple();
@@ -73,34 +96,45 @@ export default class DateHelper {
   };
 
   /**
-   * Parses a time string into a Time object.
-   * @param {string} timeString - The time string to parse (in "HH:mm" format).
-   * @returns {Time} - The Time object representing the parsed time.
-   * @throws {Error} - If the time string is invalid or in an incorrect format.
+   * Parses time string "HH:mm" into a {@link Time} object.
+   * @param {string} timeString "HH:mm" (24-hour).
+   * @returns {Time}
+   * @throws {Error} If format/values invalid.
    */
   static timeStringToTime = (timeString: string): Time => {
+    const fnName = "timeStringToTime";
     try {
       const [h, m] = timeString.split(":");
-      if (isNaN(+h) || isNaN(+m)) throw new Error();
-      return { hour: +h, minute: +m };
+      if (isNaN(+h) || isNaN(+m)) {
+        throw new FormatError(`either hour or time in timeString is NaN [${timeString}]`, fnName);
+      }
+      const hh = +h,
+        mm = +m;
+      if (hh < 0 || hh > 23) {
+        throw new FormatError(`Invalid hour [${hh}]`, fnName);
+      }
+      if (mm < 0 || mm > 59) {
+        throw new FormatError(`Invalid minute [${mm}]`, fnName);
+      }
+      return { hour: hh, minute: mm };
     } catch (error) {
-      throw new Error(`Invalid time format: ${timeString}`);
+      throw new FormatError(`Invalid time format: ${timeString}`, fnName);
     }
   };
 
   /**
-   * Converts a Time object to a time string.
-   * @param {Time} time - The Time object to convert.
-   * @returns {string} - The time string in "HH:mm" format.
+   * Formats {@link Time} to "HH:mm" (24-hour).
+   * @param {Time} time Target time.
+   * @returns {string}
    */
   static timeToTimeString = (time: Time): string =>
     [padZero(time.hour ?? 0), padZero(time.minute ?? 0)].join(":");
 
   /**
-   * Checks if two DateHelper instances represent the same day.
-   * @param {DateHelper} d1 - The first DateHelper instance.
-   * @param {DateHelper} d2 - The second DateHelper instance.
-   * @returns {boolean} - True if both DateHelper instances represent the same day, otherwise false.
+   * True if both instances are on the same calendar day (local time).
+   * @param {DateHelper} d1
+   * @param {DateHelper} d2
+   * @returns {boolean}
    */
   static isSameDay = (d1: DateHelper, d2: DateHelper): boolean => {
     const d1Tuple = d1.toDateTuple();
@@ -114,10 +148,10 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if two DateHelper objects represent the same time.
-   * @param {DateHelper} d1 - The first DateHelper object.
-   * @param {DateHelper} d2 - The second DateHelper object.
-   * @returns {boolean} - True if both objects represent the same time, false otherwise.
+   * True if both instances have identical H:m:s (ignores date).
+   * @param {DateHelper} d1
+   * @param {DateHelper} d2
+   * @returns {boolean}
    */
   static isSameTime = (d1: DateHelper, d2: DateHelper): boolean => {
     return (
@@ -128,46 +162,45 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if two time strings represent the same time.
-   * @param {string} t1 - The first time string to compare (in "HH:mm" format).
-   * @param {string} t2 - The second time string to compare (in "HH:mm" format).
-   * @returns {boolean} - True if both time strings represent the same time, false otherwise.
-   * @throws {Error} - If either of the time strings is in an invalid format.
+   * True if two "HH:mm" strings equal.
+   * @param {string} t1
+   * @param {string} t2
+   * @returns {boolean}
+   * @throws {Error} If either input invalid.
    */
   static isSameTimeString = (t1: string, t2: string): boolean => {
     const [h1, m1] = t1.split(":");
     const [h2, m2] = t2.split(":");
-    if (h1 == null || h2 == null || m1 == null || m2 == null)
-      throw new Error(
-        `Either of these arguments are in invalid format: "${t1}", "${t2}"`
-      );
+    if (h1 == null || h2 == null || m1 == null || m2 == null) {
+      throw new Error(`Either of these arguments are in invalid format: "${t1}", "${t2}"`);
+    }
     return h1 == h2 && m1 == m2;
   };
 
   /**
-   * Checks if two DateTuple objects represent the same date.
-   * @param {DateTuple} d1 - The first DateTuple object.
-   * @param {DateTuple} d2 - The second DateTuple object.
-   * @returns {boolean} - True if both DateTuple objects represent the same date, false otherwise.
+   * Shallow equality for two DateTuple values (Y,M,D).
+   * @param {DateTuple} d1
+   * @param {DateTuple} d2
+   * @returns {boolean}
    */
   static isSameDateTuple = (d1: DateTuple, d2: DateTuple): boolean => {
     return d1.every((x, i) => x === d2[i]);
   };
 
   /**
-   * Calculates the time delta in milliseconds, similar to the behavior of the timeDelta function in Python.
-   * @param {number} [days=1] - Optional. The number of days to convert to milliseconds. Defaults to 1 if not provided.
-   * @returns {number} - The time delta in milliseconds.
+   * Returns milliseconds for `days` (like Python's `timedelta` days).
+   * @param {number} [days=1] Number of days.
+   * @returns {number} days * 24h in ms.
    */
   static timeDelta = (days: number = 1): number => {
     return days * this.ONE_DAY_IN_MS;
   };
 
   /**
-   * Converts a DateTuple and Time into a JavaScript Date object.
-   * @param {DateTuple} tuple - The DateTuple representing the year, month, and date.
-   * @param {Time} time - The Time representing the hour and minute.
-   * @returns {Date} - The JavaScript Date object representing the combined date and time.
+   * Converts (Y,M,D) and time to a JS `Date` (local time).
+   * @param {DateTuple} tuple
+   * @param {Time} time
+   * @returns {Date}
    */
   static datetimeToDate = (tuple: DateTuple, time: Time): Date => {
     const [year, month, date] = tuple;
@@ -177,39 +210,58 @@ export default class DateHelper {
   };
 
   /**
-   * Determines if the provided time is in the past relative to the given date.
-   * @param {Time} time - The Time object representing the time to check.
-   * @param {DateHelper} [date=DateHelper.now()] - Optional. The date against which to compare the time. Defaults to the current date and time.
-   * @returns {boolean} - True if the provided time is in the past relative to the given date, otherwise false.
+   * Determines whether a specified time on a given date has already passed relative to the current moment.
+   *
+   * This function combines the provided {@link Time} (hour and minute) with the calendar date
+   * represented by the given {@link DateHelper} instance, forming a precise datetime point.
+   * It then compares that moment to the current system time.
+   *
+   * @example
+   * ```ts
+   * // Suppose the current datetime is 2025-10-17T14:00
+   * const date = new DateHelper("2025-10-17");
+   *
+   * DateHelper.isTimePastForDate({ hour: 10, minute: 30 }, date); // true  (10:30 has passed)
+   * DateHelper.isTimePastForDate({ hour: 18, minute: 0 }, date);  // false (18:00 not yet)
+   *
+   * // Works with past/future days as well
+   * const yesterday = new DateHelper("2025-10-16");
+   * DateHelper.isTimePastForDate({ hour: 23, minute: 0 }, yesterday); // true
+   *
+   * const tomorrow = new DateHelper("2025-10-18");
+   * DateHelper.isTimePastForDate({ hour: 1, minute: 0 }, tomorrow);   // false
+   * ```
+   *
+   * @param {Time} time - The target time of day to check (e.g., `{ hour: 9, minute: 30 }`).
+   * @param {DateHelper} [date=DateHelper.now()] - The date context for the time. Defaults to today's date if omitted.
+   * @returns {boolean} - `true` if the specified time on that date has already passed relative to now; otherwise `false`.
+   *
+   * @remarks
+   * - Uses the local timezone of the runtime environment.
+   * - Comparison precision is to the minute (seconds are ignored).
+   * - This method is safe for both past and future dates.
    */
-  static isTimePastForDate = (
-    time: Time,
-    date: DateHelper = DateHelper.now()
-  ): boolean => {
-    const currentTime = new DateHelper();
-    currentTime.date.setHours(time.hour ?? 0);
-    currentTime.date.setMinutes(time.minute ?? 0);
-    return date.isPast(currentTime) || date.isPastDay();
+  static isTimePastForDate = (time: Time, date: DateHelper = DateHelper.now()): boolean => {
+    const cmp = new DateHelper(date.toMs());
+    cmp.getDate().setHours(time.hour ?? 0, time.minute ?? 0, 0, 0);
+    return Date.now() > cmp.toMs();
   };
 
   /**
-   * Creates a new DateHelper instance with the specified date and timezone offset.
-   * @param {string} date - The date string to create the instance from.
-   * @param {number} [offset=this.THAI_TIMEZONE_OFFSET] - The timezone offset in milliseconds.
-   * @returns {DateHelper} - A new DateHelper instance with the specified date and offset.
+   * Builds instance from an ISO-like date string with an additional fixed offset (defaults TH +07:00).
+   * @param {string} date ISO-like string (parsable by `Date.parse`).
+   * @param {number} [offset=this.THAI_TIMEZONE_OFFSET] Offset in milliseconds.
+   * @returns {DateHelper}
    */
-  static getInstanceWithOffset = (
-    date: string,
-    offset = this.THAI_TIMEZONE_OFFSET
-  ) => {
+  static getInstanceWithOffset = (date: string, offset = this.THAI_TIMEZONE_OFFSET) => {
     const ms = Date.parse(date);
     return new DateHelper(ms + offset);
   };
 
   /**
-   * Creates a new DateHelper instance from a DateTuple.
-   * @param {DateTuple | null} tuple - The DateTuple to create the instance from.
-   * @returns {DateHelper | null} - A new DateHelper instance if a valid DateTuple is provided, otherwise null.
+   * Builds instance from a {@link DateTuple}.
+   * @param {DateTuple | null} tuple Nullable tuple.
+   * @returns {DateHelper | null} Null if tuple is null.
    */
   static fromDateTuple = (tuple: DateTuple | null): DateHelper | null => {
     if (tuple == null) return null;
@@ -217,10 +269,10 @@ export default class DateHelper {
   };
 
   /**
-   * Finds the previous month and year based on the given month and year.
-   * @param {number} month - The current month (human read).
-   * @param {number} year - The current year.
-   * @returns {MonthYear} The previous month and year.
+   * Returns the previous (month, year) for a given human month 1-12.
+   * @param {number} month Current month (1-12).
+   * @param {number} year Current year.
+   * @returns {MonthYear}
    */
   static findPreviousMonthYear = (month: number, year: number): MonthYear => {
     let previousMonth = month - 1;
@@ -235,10 +287,10 @@ export default class DateHelper {
   };
 
   /**
-   * Finds the next month and year based on the given month and year.
-   * @param {number} month - The current month (human read).
-   * @param {number} year - The current year.
-   * @returns {MonthYear} The next month and year.
+   * Returns the next (month, year) for a given human month 1-12.
+   * @param {number} month Current month (1-12).
+   * @param {number} year Current year.
+   * @returns {MonthYear}
    */
   static findNextMonthYear = (month: number, year: number): MonthYear => {
     let nextMonth = month + 1;
@@ -252,7 +304,31 @@ export default class DateHelper {
     return { month: nextMonth, year: nextYear };
   };
 
-  protected getLanguageConstants = () => {
+  /**
+   * Returns the localized constant set for the current language configuration.
+   *
+   * Useful when you want to directly access month names, weekdays, or time-ago
+   * strings without relying on the display methods like {@link getDisplayDate}.
+   *
+   * @example
+   * ```ts
+   * const helper = new DateHelper("2025-10-17", { lang: "th" });
+   * const constants = helper.getLanguageConstants();
+   * console.log(constants.MONTHS[0]); // "มกราคม"
+   * console.log(constants.timeAgo.day(3)); // "3 วันที่แล้ว"
+   * ```
+   *
+   * @returns {typeof import("./constants").en} A language constant object containing:
+   * - `MONTHS`: Full month names
+   * - `MONTHS_ABBR`: Abbreviated month names
+   * - `WEEKDAYS`: Weekday names
+   * - `timeAgo`: Formatting helpers for relative time strings
+   *
+   * @remarks
+   * - The returned constants are read-only; modify them only if you fully control your environment.
+   * - Language options currently supported: `"en"` and `"th"`.
+   */
+  getLanguageConstants = () => {
     switch (this.defaultLang) {
       case "en":
         return constantsEN;
@@ -263,29 +339,24 @@ export default class DateHelper {
     }
   };
 
-  private date: Date;
-  protected defaultLang: SupportedLanguages = "en";
-  protected useShortText = false;
-  protected useBD = false;
-  protected use12HourFormat = false;
-  protected showSeconds = false;
-
   /**
-   * Initializes a new instance of the DateHelper class.
-   * @constructor
-   * @param {string | number} [dateStringOrNumberInMs] - Optional. A string representing a date, a number representing a timestamp, or undefined for the current date and time.
-   * @param {Partial<DateHelperConfig>} [config={}] - Optional. Configuration options for the DateHelper instance.
+   * Creates a new DateHelper.
+   *
+   * - If `dateStringOrNumberInMs` is a number, treated as Unix ms.
+   * - If it's a string, parsed by `Date.parse` (ISO-like recommended).
+   * - If omitted, uses current moment.
+   * - If `config.isUTC` is true, adjusts result to UTC (removes local offset).
+   *
+   * @param {string | number} [dateStringOrNumberInMs] Source date/time or timestamp.
+   * @param {Partial<DateHelperConfig>} [config={}] Display/config options.
+   * @throws {Error} If date string cannot be parsed.
    */
-  constructor(
-    dateStringOrNumberInMs?: string | number,
-    config: Partial<DateHelperConfig> = {}
-  ) {
+  constructor(dateStringOrNumberInMs?: string | number, config: Partial<DateHelperConfig> = {}) {
     if (dateStringOrNumberInMs != null) {
       const ts = +dateStringOrNumberInMs;
       if (isNaN(ts)) {
         const parsedDate = Date.parse(dateStringOrNumberInMs as string);
-        if (isNaN(parsedDate))
-          throw new Error("Invalid date string or number provided.");
+        if (isNaN(parsedDate)) throw new Error("Invalid date string or number provided.");
         this.date = new Date(parsedDate);
       } else this.date = new Date(ts);
     } else this.date = new Date();
@@ -299,15 +370,17 @@ export default class DateHelper {
     if (config.lang) this.defaultLang = config.lang;
     if (config.useShortText != null) this.useShortText = config.useShortText;
     if (config.useBD != null) this.useBD = config.useBD;
-    if (config.use12HourFormat != null)
+    if (config.use12HourFormat != null) {
       this.use12HourFormat = config.use12HourFormat;
+    }
     if (config.showSeconds != null) this.showSeconds = config.showSeconds;
+    if (this.defaultLang === "th") moment.locale("th");
   }
 
   /**
-   * Checks if this DateHelper instance represents the same month as the provided DateHelper instance.
-   * @param {DateHelper} dateToCompare - The DateHelper instance to compare against.
-   * @returns {boolean} - True if both DateHelper instances represent the same month, otherwise false.
+   * True if both objects are in the same month and year (local time).
+   * @param {DateHelper} dateToCompare
+   * @returns {boolean}
    */
   isSameMonth = (dateToCompare: DateHelper): boolean => {
     return (
@@ -317,17 +390,16 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if the given DateHelper instance represents the same day as this DateHelper instance.
-   * @param {DateHelper} dateToCompare - The DateHelper instance to compare against.
-   * @returns {boolean} - True if both DateHelper instances represent the same day, otherwise false.
+   * True if both objects are on the same calendar day (local time).
+   * @param {DateHelper} dateToCompare
+   * @returns {boolean}
    */
   isSameDay = (dateToCompare: DateHelper): boolean =>
-    this.isSameMonth(dateToCompare) &&
-    this.date.getDate() === dateToCompare.date.getDate();
+    this.isSameMonth(dateToCompare) && this.date.getDate() === dateToCompare.date.getDate();
 
   /**
-   * Checks if this DateHelper instance represents today.
-   * @returns {boolean} - True if this DateHelper instance represents today, otherwise false.
+   * True if this object represents today's date (local time).
+   * @returns {boolean}
    */
   isToday = (): boolean => {
     const today = new DateHelper();
@@ -335,16 +407,17 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if this object represents a past date.
-   * @param {DateHelper} [pastForm] - The DateHelper instance to compare against. Defaults to the current date.
-   * @returns {boolean} - True if this DateHelper instance represents a past date, otherwise false.
+   * True if this datetime is earlier than `pastForm` (default: now).
+   * @param {DateHelper} [pastForm] Comparing reference (defaults to current moment).
+   * @returns {boolean}
    */
-  isPast = (pastForm: DateHelper = new DateHelper()): boolean =>
-    pastForm.toMs() - this.toMs() > 0;
+  isPast = (pastForm: DateHelper = new DateHelper()): boolean => {
+    return pastForm.toMs() - this.toMs() > 0;
+  };
 
   /**
-   * Checks if this DateHelper instance represents a date before today.
-   * @returns {boolean} - True if this DateHelper instance represents a date before today, otherwise false.
+   * True if this date is strictly before today (ignores time).
+   * @returns {boolean}
    */
   isPastDay = (): boolean => !this.isToday() && this.isPast();
 
@@ -357,10 +430,11 @@ export default class DateHelper {
     const yesterday = new DateHelper(today.toMs() - DateHelper.timeDelta());
     return this.isSameDay(yesterday);
   };
+
   /**
-   * Checks if this DateHelper instance represents a date before the given date.
-   * @param {DateHelper} dateToCompare - The DateHelper instance to compare against.
-   * @returns {boolean} - True if this DateHelper instance represents a date before the given date, otherwise false.
+   * True if this date is before the given date (strict; ignores equality).
+   * @param {DateHelper} dateToCompare
+   * @returns {boolean}
    */
   isDayBefore = (dateToCompare: DateHelper): boolean => {
     if (this.isSameDay(dateToCompare)) return false;
@@ -368,9 +442,9 @@ export default class DateHelper {
   };
 
   /**
-   * Checks if this DateHelper instance represents a date after the given date.
-   * @param {DateHelper} dateToCompare - The DateHelper instance to compare against.
-   * @returns {boolean} - True if this DateHelper instance represents a date after the given date, otherwise false.
+   * True if this date is after the given date (strict; ignores equality).
+   * @param {DateHelper} dateToCompare
+   * @returns {boolean}
    */
   isDayAfter = (dateToCompare: DateHelper): boolean => {
     if (this.isSameDay(dateToCompare)) return false;
@@ -378,36 +452,38 @@ export default class DateHelper {
   };
 
   /**
-   * Joins the date components of this DateHelper instance into a string with a hyphen separator.
-   * @returns {string} - The date components joined into a string.
+   * Returns "YYYY-M-D" created from {@link toDateTuple}.
+   * @returns {string}
    */
   joinDateTuple = (): string => {
     return this.toDateTuple().join("-");
   };
 
   /**
-   * Gets the DateHelper instance representing yesterday.
-   * @returns {DateHelper} - The DateHelper instance representing yesterday.
+   * Returns a new instance representing "yesterday" from this instance.
+   * @returns {DateHelper}
    */
-  getYesterday = (): DateHelper =>
-    new DateHelper(this.toMs() - DateHelper.timeDelta());
+  getYesterday = (): DateHelper => {
+    return new DateHelper(this.toMs() - DateHelper.timeDelta());
+  };
 
   /**
-   * Gets the number of days in the month represented by this DateHelper instance.
-   * @returns {number} - The number of days in the month.
+   * Number of days in the month of this instance (local time).
+   * @returns {number}
    */
   getDaysCountInMonth = (): number => {
     const [year, month] = this.toDateTuple();
     const monthWith30Days = [4, 6, 9, 11];
 
-    const isLeapYear = year % 4 === 0;
+    const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+
     if (month === 2) return isLeapYear ? 29 : 28;
     return monthWith30Days.includes(month) ? 30 : 31;
   };
 
   /**
-   * Gets the weekday of the first day of the month should be represented in typical calendar.
-   * @returns {number} - The weekday index (0 for Sunday, 1 for Monday, ..., 6 for Saturday).
+   * Weekday index (0=Sun..6=Sat) for the 1st of the month of this instance.
+   * @returns {number}
    */
   getFirstWeekdayInMonth = (): number => {
     const [year, month] = this.toDateTuple();
@@ -416,8 +492,13 @@ export default class DateHelper {
   };
 
   /**
-   * Returns a human-readable string representing the time difference between the current time and this DateHelper instance.
-   * @returns {string} - A string representing the time difference.
+   * Human-friendly relative time string using language constants.
+   * - < 1 min → "just now"
+   * - < 60 min → "X minutes ago"
+   * - < 1 day → "X hours ago"
+   * - < 30 days → "X days ago"
+   * - else → `getDisplayDate()`
+   * @returns {string}
    */
   getTimeRelativeToNow = (): string => {
     const now = new DateHelper(); // Current time
@@ -441,9 +522,8 @@ export default class DateHelper {
   };
 
   /**
-   * Get the Buddhist calendar year (BD year) of the current date.
-   * @returns {number} The Buddhist calendar year (BD year).
-   * @throws {Error} Throws an error if the date is already in the Buddhist calendar.
+   * Buddhist Era year = Gregorian year + 543.
+   * @returns {number}
    */
   getBDYear = (): number => {
     const year = this.date.getFullYear();
@@ -451,8 +531,8 @@ export default class DateHelper {
   };
 
   /**
-   * Get the Gregorian calendar year (AD year) of the current date.
-   * @returns {number} The Gregorian calendar year (AD year).
+   * Gregorian year (AD).
+   * @returns {number}
    */
   getADYear = (): number => {
     const year = this.date.getFullYear();
@@ -460,9 +540,9 @@ export default class DateHelper {
   };
 
   /**
-   * Get the display date string in the format "DD Month YYYY".
-   * Feel free to inherit this to your project's scheme.
-   * @returns {string} The display date string.
+   * Returns "DD Month YYYY" using configured language/short text/BE.
+   * @example "01 March 2024" or "01 มีนาคม 2567"
+   * @returns {string}
    */
   getDisplayDate = (): string => {
     const date = this.date.getDate();
@@ -475,9 +555,10 @@ export default class DateHelper {
   };
 
   /**
-   * Get the formatted time string based on the current configuration settings.
-   * Feel free to inherit this to your project's scheme.
-   * @returns {string} The formatted time string.
+   * Returns formatted time string according to config:
+   * - 24h: "HH:mm" (with optional seconds "HH:mm:ss")
+   * - 12h: "hh:mm AM/PM" (optional seconds)
+   * @returns {string}
    */
   getDisplayTime = (): string => {
     let hours: number | string = this.date.getHours();
@@ -510,15 +591,17 @@ export default class DateHelper {
   };
 
   /**
-   * Get the formatted date and time string based on the current configuration settings.
-   * @returns {string} The formatted date and time string.
+   * Concatenates `getDisplayDate()` + `getDisplayTime()` with a space.
+   * @returns {string}
    */
-  getDisplayDateAndTime = (): string =>
-    [this.getDisplayDate(), this.getDisplayTime()].join(" ");
+  getDisplayDateAndTime = (): string => {
+    return [this.getDisplayDate(), this.getDisplayTime()].join(" ");
+  };
 
   /**
-   * Get the name of the month based on the current configuration settings.
-   * @returns {string} The name of the month.
+   * Localized month name for the instance's month.
+   * Respects `useShortText` (abbr vs full name).
+   * @returns {string}
    */
   getMonthName = (): string => {
     const month = this.date.getMonth();
@@ -528,14 +611,14 @@ export default class DateHelper {
   };
 
   /**
-   * Get Date object on this DateHelper object.
-   * @returns {Date} - The Date representing date time for this object.
+   * Returns the underlying `Date` object (mutable).
+   * @returns {Date}
    */
   getDate = (): Date => this.date;
 
   /**
-   * Converts the DateHelper object to a DateTuple.
-   * @returns {DateTuple} - The DateTuple representing the year, month, and date of the DateHelper object.
+   * Returns `[year, month(1-12), day(1-31)]` in local time.
+   * @returns {DateTuple}
    */
   toDateTuple = (): DateTuple => [
     this.date.getFullYear(),
@@ -544,8 +627,8 @@ export default class DateHelper {
   ];
 
   /**
-   * Converts the time components of this DateHelper instance into a Time object.
-   * @returns {Time} - The time components as a Time object.
+   * Returns `{ hour, minute }` in local time (seconds ignored).
+   * @returns {Time}
    */
   toTimeObject = (): Time => ({
     hour: this.date.getHours(),
@@ -553,29 +636,33 @@ export default class DateHelper {
   });
 
   /**
-   * Converts this DateHelper instance to milliseconds since January 1, 1970, 00:00:00 UTC.
-   * @returns {number} - The number of milliseconds since January 1, 1970, 00:00:00 UTC.
+   * Milliseconds since Unix epoch (UTC).
+   * @returns {number}
    */
   toMs = (): number => this.date.getTime();
 
   /**
-   * Converts the DateHelper object to a string in ISO 8601 date format (YYYY-MM-DD).
-   * @returns {string} The date string in ISO 8601 format.
+   * ISO-like local date `"YYYY-MM-DD"`.
+   * Note: this uses local date parts (not UTC `.toISOString()`), avoiding day shifts.
+   * @returns {string}
    */
   toISODate = (): string => {
-    return this.date.toISOString().slice(0, 10);
+    const y = this.date.getFullYear();
+    const m = this.date.getMonth() + 1;
+    const d = this.date.getDate();
+    return [y, padZero(m), padZero(d)].join("-");
   };
 
   /**
-   * Generates an ISO 8601 formatted date and time string.
-   * @returns {string} The ISO 8601 formatted date and time string.
+   * Full ISO 8601 timestamp (UTC-based) via `Date.toISOString()`.
+   * @returns {string}
    */
   toISO8601String = (): string => {
     return this.date.toISOString();
   };
 
   /**
-   * Converts the DateHelper object to momentjs instance
+   * Wraps the instance date as a Moment.js object (locale not auto-set here).
    * @returns {moment.Moment}
    */
   toMoment = (): moment.Moment => {
