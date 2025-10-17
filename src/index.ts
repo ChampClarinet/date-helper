@@ -1,16 +1,7 @@
 import moment from "moment";
-import {
-  ONE_DAY_IN_MILLISECONDS,
-  en as constantsEN,
-  th as constantsTH,
-} from "./constants";
-import {
-  DateHelperConfig,
-  DateTuple,
-  MonthYear,
-  SupportedLanguages,
-  Time,
-} from "./types";
+
+import { ONE_DAY_IN_MILLISECONDS, en as constantsEN, th as constantsTH } from "./constants";
+import { DateHelperConfig, DateTuple, MonthYear, SupportedLanguages, Time } from "./types";
 import { padZero } from "./utils";
 
 export * from "./constants";
@@ -27,8 +18,7 @@ export default class DateHelper {
    * @param {DateHelperConfig} [config] - Optional configuration for the DateHelper instance.
    * @returns {DateHelper} A DateHelper instance representing the current date and time.
    */
-  static now = (config?: DateHelperConfig): DateHelper =>
-    new DateHelper(undefined, config);
+  static now = (config?: DateHelperConfig): DateHelper => new DateHelper(undefined, config);
 
   /**
    * Return gap in minutes between parameters d1 and d2
@@ -63,9 +53,7 @@ export default class DateHelper {
    */
   static isInGivenDate = (date: string, instance: DateHelper): boolean => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      throw new Error(
-        `Invalid date format: "${date}", must be in this format: YYYY-MM-DD`
-      );
+      throw new Error(`Invalid date format: "${date}", must be in this format: YYYY-MM-DD`);
     }
     const [year, month, day] = date.split("-");
     const [y, m, d] = instance.toDateTuple();
@@ -138,9 +126,7 @@ export default class DateHelper {
     const [h1, m1] = t1.split(":");
     const [h2, m2] = t2.split(":");
     if (h1 == null || h2 == null || m1 == null || m2 == null)
-      throw new Error(
-        `Either of these arguments are in invalid format: "${t1}", "${t2}"`
-      );
+      throw new Error(`Either of these arguments are in invalid format: "${t1}", "${t2}"`);
     return h1 == h2 && m1 == m2;
   };
 
@@ -182,10 +168,7 @@ export default class DateHelper {
    * @param {DateHelper} [date=DateHelper.now()] - Optional. The date against which to compare the time. Defaults to the current date and time.
    * @returns {boolean} - True if the provided time is in the past relative to the given date, otherwise false.
    */
-  static isTimePastForDate = (
-    time: Time,
-    date: DateHelper = DateHelper.now()
-  ): boolean => {
+  static isTimePastForDate = (time: Time, date: DateHelper = DateHelper.now()): boolean => {
     const currentTime = new DateHelper();
     currentTime.date.setHours(time.hour ?? 0);
     currentTime.date.setMinutes(time.minute ?? 0);
@@ -198,10 +181,7 @@ export default class DateHelper {
    * @param {number} [offset=this.THAI_TIMEZONE_OFFSET] - The timezone offset in milliseconds.
    * @returns {DateHelper} - A new DateHelper instance with the specified date and offset.
    */
-  static getInstanceWithOffset = (
-    date: string,
-    offset = this.THAI_TIMEZONE_OFFSET
-  ) => {
+  static getInstanceWithOffset = (date: string, offset = this.THAI_TIMEZONE_OFFSET) => {
     const ms = Date.parse(date);
     return new DateHelper(ms + offset);
   };
@@ -276,16 +256,12 @@ export default class DateHelper {
    * @param {string | number} [dateStringOrNumberInMs] - Optional. A string representing a date, a number representing a timestamp, or undefined for the current date and time.
    * @param {Partial<DateHelperConfig>} [config={}] - Optional. Configuration options for the DateHelper instance.
    */
-  constructor(
-    dateStringOrNumberInMs?: string | number,
-    config: Partial<DateHelperConfig> = {}
-  ) {
+  constructor(dateStringOrNumberInMs?: string | number, config: Partial<DateHelperConfig> = {}) {
     if (dateStringOrNumberInMs != null) {
       const ts = +dateStringOrNumberInMs;
       if (isNaN(ts)) {
         const parsedDate = Date.parse(dateStringOrNumberInMs as string);
-        if (isNaN(parsedDate))
-          throw new Error("Invalid date string or number provided.");
+        if (isNaN(parsedDate)) throw new Error("Invalid date string or number provided.");
         this.date = new Date(parsedDate);
       } else this.date = new Date(ts);
     } else this.date = new Date();
@@ -299,8 +275,7 @@ export default class DateHelper {
     if (config.lang) this.defaultLang = config.lang;
     if (config.useShortText != null) this.useShortText = config.useShortText;
     if (config.useBD != null) this.useBD = config.useBD;
-    if (config.use12HourFormat != null)
-      this.use12HourFormat = config.use12HourFormat;
+    if (config.use12HourFormat != null) this.use12HourFormat = config.use12HourFormat;
     if (config.showSeconds != null) this.showSeconds = config.showSeconds;
   }
 
@@ -322,8 +297,7 @@ export default class DateHelper {
    * @returns {boolean} - True if both DateHelper instances represent the same day, otherwise false.
    */
   isSameDay = (dateToCompare: DateHelper): boolean =>
-    this.isSameMonth(dateToCompare) &&
-    this.date.getDate() === dateToCompare.date.getDate();
+    this.isSameMonth(dateToCompare) && this.date.getDate() === dateToCompare.date.getDate();
 
   /**
    * Checks if this DateHelper instance represents today.
@@ -339,8 +313,7 @@ export default class DateHelper {
    * @param {DateHelper} [pastForm] - The DateHelper instance to compare against. Defaults to the current date.
    * @returns {boolean} - True if this DateHelper instance represents a past date, otherwise false.
    */
-  isPast = (pastForm: DateHelper = new DateHelper()): boolean =>
-    pastForm.toMs() - this.toMs() > 0;
+  isPast = (pastForm: DateHelper = new DateHelper()): boolean => pastForm.toMs() - this.toMs() > 0;
 
   /**
    * Checks if this DateHelper instance represents a date before today.
@@ -389,8 +362,7 @@ export default class DateHelper {
    * Gets the DateHelper instance representing yesterday.
    * @returns {DateHelper} - The DateHelper instance representing yesterday.
    */
-  getYesterday = (): DateHelper =>
-    new DateHelper(this.toMs() - DateHelper.timeDelta());
+  getYesterday = (): DateHelper => new DateHelper(this.toMs() - DateHelper.timeDelta());
 
   /**
    * Gets the number of days in the month represented by this DateHelper instance.
@@ -513,8 +485,7 @@ export default class DateHelper {
    * Get the formatted date and time string based on the current configuration settings.
    * @returns {string} The formatted date and time string.
    */
-  getDisplayDateAndTime = (): string =>
-    [this.getDisplayDate(), this.getDisplayTime()].join(" ");
+  getDisplayDateAndTime = (): string => [this.getDisplayDate(), this.getDisplayTime()].join(" ");
 
   /**
    * Get the name of the month based on the current configuration settings.

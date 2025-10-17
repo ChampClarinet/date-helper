@@ -11,3 +11,4 @@ You can install DateHelper via npm:
 
 ```bash
 npm install date-helper
+```

@@ -1,28 +1,7 @@
 export const en = {
   WEEKDAYS_ABBR: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-  WEEKDAYS: [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ],
-  MONTHS_ABBR: [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ],
+  WEEKDAYS: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  MONTHS_ABBR: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   MONTHS: [
     "January",
     "February",
@@ -47,15 +26,7 @@ export const en = {
 
 export const th = {
   WEEKDAYS_ABBR: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
-  WEEKDAYS: [
-    "อาทิตย์",
-    "จันทร์",
-    "อังคาร",
-    "พุธ",
-    "พฤหัสบดี",
-    "ศุกร์",
-    "เสาร์",
-  ],
+  WEEKDAYS: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"],
   MONTHS_ABBR: [
     "ม.ค.",
     "ก.พ.",
